@@ -222,12 +222,11 @@ def test(loader,topk = 20): #20
 
     return Saved_indices,Saved_Values,Saved_sol,Saved_pos,Heat_mat
 
-# # # to load a predefined model
-# # #TSP200
-# # print(args.num_of_nodes,args.nlayers,args.hidden)
-# model_name = '/Users/rajeshsharma/Desktop/iitg/summerProject25/CCSummer Project/UTSP/my_saved_model/TSP_%d/scatgnn_layer_%d_hid_%d_model_5_temp_3.500.pth'%(args.num_of_nodes,args.nlayers,args.hidden)# topk = 10
-# model.load_state_dict(torch.load(model_name))
-# #Saved_indices,Saved_Values,Saved_sol,Saved_pos = test(test_loader,topk = 8) # epoch=20>10 
+# to load a predefined model
+# TSP 100
+
+model_name = 'Saved_models/TSP_%d/scatgnn_layer_%d_hid_%d_model_20_temp_3.500.pth'%(args.num_of_nodes,args.nlayers,args.hidden)# topk = 20
+model.load_state_dict(torch.load(model_name)) #for 20 epoch
 Saved_indices,Saved_Values,Saved_sol,Saved_pos,Heat_mat = test(test_loader,topk = args.topk) # epoch=20>10
 
 
@@ -292,7 +291,7 @@ def two_opt(tour, coords):
     return tour
 
 # Q = Saved_pos, C = Saved_indices
-# For instance 0
+# For test check for instance 0
 instance_id = 0
 coords = Q[instance_id]
 pred_neighbors = C[instance_id]
@@ -305,3 +304,41 @@ opt_tour = [int(x) for x in opt_tour]
 print("Heat MAP: ",Heat_mat)
 print("Predicted tour:", opt_tour)
 print("Length:", compute_tour_length(opt_tour, coords))
+
+gaps = []
+for i in range(100):
+    # Get reference solution and coordinates
+    ref_tour = tsp_sols[i].astype(int)  # Ensure integer indices
+    coords = Q[i]
+    
+    # Calculate reference length (optimal)
+    optimal_length = compute_tour_length(ref_tour, coords)
+    
+    # Generate your prediction
+    init_tour = build_greedy_tour(C[i], coords)
+    pred_tour = two_opt(init_tour, coords)
+    
+    # Calculate predicted length
+    pred_length = compute_tour_length(pred_tour, coords)
+    
+    # Compute gap
+    gap = (pred_length - optimal_length) / optimal_length
+    gaps.append(gap)
+
+# Convert to percentage gaps
+gaps = np.array(gaps) * 100
+# Average optimality gap
+mean_gap = np.mean(gaps)
+
+# Median gap
+median_gap = np.median(gaps)
+
+# Percentage of solutions within 5% of optimal
+within_5pct = np.mean(gaps <= 5) * 100
+
+# Worst-case performance
+max_gap = np.max(gaps)
+print(f"Average optimality gap: {mean_gap:.2f}%")
+print(f"Median optimality gap: {median_gap:.2f}%")
+print(f"Solutions within 5% of optimal: {within_5pct:.1f}%")
+print(f"Maximum gap: {max_gap:.2f}%")
